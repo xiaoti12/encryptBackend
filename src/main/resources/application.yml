@@ -1,0 +1,31 @@
+spring:
+  datasource:
+    url: jdbc:clickhouse:http://10.3.242.84:8123/TLS
+    username: default
+    password: password
+    driver-class-name: com.clickhouse.jdbc.ClickHouseDriver
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 1024MB
+      max-request-size: 1024MB
+
+mybatis-plus:
+  mapper-locations: classpath:mapper/*.xml
+  configuration:
+    mapUnderscoreToCamelCase: false
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha
+  api-docs:
+    path: /v3/api-docs
+  group-configs:
+    - group: 'default'
+      paths-to-match: '/**'
+      packages-to-scan: com.networkflow.backendspringboot3.controller
+
+server:
+  port: 8100
