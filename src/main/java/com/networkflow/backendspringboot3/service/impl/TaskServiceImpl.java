@@ -142,7 +142,7 @@ public class TaskServiceImpl extends ServiceImpl<TaskMapper, Task> implements Ta
 
     @Override
     public boolean updateTaskByTask(Task task) {
-        return taskMapper.updateById(task) > 0;
+        // return taskMapper.updateById(task) > 0;
     }
 
     @Override
