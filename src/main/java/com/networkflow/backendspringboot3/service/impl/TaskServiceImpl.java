@@ -9,9 +9,11 @@ import com.networkflow.backendspringboot3.mapper.PacketMapper;
 import com.networkflow.backendspringboot3.mapper.TaskMapper;
 import com.networkflow.backendspringboot3.mapper.TimeFlowMapper;
 import com.networkflow.backendspringboot3.mapper.UEFlowMapper;
+import com.networkflow.backendspringboot3.mapper.TLSFlowMapper;
 import com.networkflow.backendspringboot3.model.domain.Task;
 import com.networkflow.backendspringboot3.model.domain.TimeFlow;
 import com.networkflow.backendspringboot3.model.domain.UEFlow;
+import com.networkflow.backendspringboot3.model.domain.TLSFlow;
 import com.networkflow.backendspringboot3.model.request.TaskRequest;
 import com.networkflow.backendspringboot3.service.TaskService;
 import org.springframework.beans.BeanUtils;
@@ -44,6 +46,8 @@ public class TaskServiceImpl extends ServiceImpl<TaskMapper, Task> implements Ta
     @Autowired
     private UEFlowMapper ueFlowMapper;
     @Autowired
+    private TLSFlowMapper tlsFlowMapper;
+    @Autowired
     private PacketMapper packetMapper;
 
     public TaskServiceImpl(DetectTask detectTask) {
@@ -64,7 +68,7 @@ public class TaskServiceImpl extends ServiceImpl<TaskMapper, Task> implements Ta
         BeanUtils.copyProperties(createTaskRequest, task);
         if (uploadFile != null) {
             String fileName = uploadFile.getOriginalFilename();
-            String filePath = System.getProperty("user.dir") + System.getProperty("file.separator") + "core" + System.getProperty("file.separator") + "upload";
+            String filePath = System.getProperty("user.dir") + System.getProperty("file.separator") + "core_python" + System.getProperty("file.separator") + "upload";
             File file = new File(filePath);
             if (!file.exists()) {
                 if (!file.mkdir()) {
@@ -94,7 +98,7 @@ public class TaskServiceImpl extends ServiceImpl<TaskMapper, Task> implements Ta
         BeanUtils.copyProperties(createTaskRequest, task);
         if (uploadFile != null) {
             String fileName = uploadFile.getOriginalFilename();
-            String filePath = System.getProperty("user.dir") + System.getProperty("file.separator") + "core_go" + System.getProperty("file.separator") + "upload";
+            String filePath = System.getProperty("user.dir") + System.getProperty("file.separator") + "core_python" + System.getProperty("file.separator") + "upload";
             File file = new File(filePath);
             if (!file.exists()) {
                 if (!file.mkdir()) {
@@ -153,8 +157,9 @@ public class TaskServiceImpl extends ServiceImpl<TaskMapper, Task> implements Ta
             task.setTaskId(taskId);
             task.setStatus(1);
             // 清除缓存
-            timeFlowMapper.delete(new QueryWrapper<TimeFlow>().lambda().eq(TimeFlow::getTaskID, taskId));
-            ueFlowMapper.delete(new QueryWrapper<UEFlow>().lambda().eq(UEFlow::getTaskID, taskId));
+            // timeFlowMapper.delete(new QueryWrapper<TimeFlow>().lambda().eq(TimeFlow::getTaskID, taskId));
+            // ueFlowMapper.delete(new QueryWrapper<UEFlow>().lambda().eq(UEFlow::getTaskID, taskId));
+            tlsFlowMapper.delete(new QueryWrapper<TLSFlow>().lambda().eq(TLSFlow::getTaskID, taskId));
 
             if (taskMapper.updateById(task) > 0) {
                 successCount++;
@@ -185,8 +190,10 @@ public class TaskServiceImpl extends ServiceImpl<TaskMapper, Task> implements Ta
             task.setStartTime(LocalDateTime.parse(currentTime, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
             taskMapper.updateById(task);
             if (taskMapper.updateById(task) > 0) {
-                detectTask.executeGoScript(System.getProperty("user.dir") + System.getProperty("file.separator") + "core" +
-                        System.getProperty("file.separator") + "springboot.py", task);
+                // detectTask.executeGoScript(System.getProperty("user.dir") + System.getProperty("file.separator") + "core" +
+                //         System.getProperty("file.separator") + "springboot.py", task);
+                detectTask.executePythonScript(System.getProperty("user.dir") + System.getProperty("file.separator") + "core_python" +
+                        System.getProperty("file.separator") + "main.py", task);
             } else {
                 log.info("启动成功");
             }
@@ -206,8 +213,8 @@ class DetectTask {
     public void executePythonScript(String scriptPath, Task currentTask) {
         log.info("执行Python的线程名字为 = " + Thread.currentThread().getName());
         try {
-            String condaEnv = "base";
-            ProcessBuilder processBuilder = new ProcessBuilder("D:\\ProgramData\\anaconda3\\python.exe", scriptPath, "--file_path", currentTask.getPcapPath(), "--taskid", currentTask.getTaskId());
+            String condaEnv = "tig";
+            ProcessBuilder processBuilder = new ProcessBuilder("/home/fsc/anaconda3/envs/tig/bin/python", scriptPath, "--file_path", currentTask.getPcapPath(), "--taskid", currentTask.getTaskId());
             Process process = processBuilder.start();
 
             // 处理脚本的输出
