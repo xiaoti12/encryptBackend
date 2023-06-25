@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.networkflow.backendspringboot3.common.R;
 import com.networkflow.backendspringboot3.model.domain.TLSFlow; //change import here
 
-public interface UEFlowService extends IService<TLSFlow> {
+public interface TLSFlowService extends IService<TLSFlow> {
     R allTLSFlow();
 
     R deleteTLSFlowsByTaskId(String taskId);

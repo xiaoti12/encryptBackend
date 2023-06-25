@@ -17,7 +17,7 @@ public class TLSFlowServiceImpl extends ServiceImpl<TLSFlowMapper, TLSFlow> impl
     @Override
     public R allTLSFlow() {
         QueryWrapper<TLSFlow> queryWrapper = new QueryWrapper<>();
-        queryWrapper.lambda().orderByAsc(TLSFlow::getBeginTime)
+        queryWrapper.lambda().orderByAsc(TLSFlow::getBeginTime);
         return R.success(null, tlsFlowMapper.selectList(queryWrapper));
     }
 
