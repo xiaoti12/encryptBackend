@@ -17,6 +17,7 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.ArrayList;
 
 @Service
 public class AbstractServiceImpl extends ServiceImpl<AbstractMapper, Abstract> implements AbstractService {
@@ -71,6 +72,45 @@ public class AbstractServiceImpl extends ServiceImpl<AbstractMapper, Abstract> i
             Normal.put(day, Normal.getOrDefault(day, 0L) + normalFlow);
         }
 
+        // 转换completedTask
+        List<Map<String, Object>> completedTaskList = new ArrayList<>();
+        for (Map.Entry<String, Integer> entry : completedTask.entrySet()) {
+            String dateByDay = entry.getKey();
+            Integer count = entry.getValue();
+
+            Map<String, Object> completedTaskItem = new HashMap<>();
+            completedTaskItem.put("dateByDay", dateByDay);
+            completedTaskItem.put("completeTaskByDay", count);
+
+            completedTaskList.add(completedTaskItem);
+        }
+
+        // 转换n2Abnormal
+        List<Map<String, Object>> AbnormalList = new ArrayList<>();
+        for (Map.Entry<String, Long> entry : Abnormal.entrySet()) {
+            String dateByDay = entry.getKey();
+            Long n2AbnormalByDay = entry.getValue();
+
+            Map<String, Object> AbnormalItem = new HashMap<>();
+            AbnormalItem.put("dateByDay", dateByDay);
+            AbnormalItem.put("n2AbnormalByDay", n2AbnormalByDay);
+
+            AbnormalList.add(AbnormalItem);
+        }
+
+        // 转换n2Normal
+        List<Map<String, Object>> NormalList = new ArrayList<>();
+        for (Map.Entry<String, Long> entry : Normal.entrySet()) {
+            String dateByDay = entry.getKey();
+            Long n2NormalByDay = entry.getValue();
+
+            Map<String, Object> NormalItem = new HashMap<>();
+            NormalItem.put("dateByDay", dateByDay);
+            NormalItem.put("n2NormalByDay", n2NormalByDay);
+
+            NormalList.add(NormalItem);
+        }
+
         // 所有流
         Long abnormalFlowAll = tlsFlowMapper.selectCount(new QueryWrapper<TLSFlow>().lambda().eq(TLSFlow::getClassification, 1));
         Long normalFlowAll = tlsFlowMapper.selectCount(new QueryWrapper<TLSFlow>().lambda().eq(TLSFlow::getClassification, 0));
@@ -102,9 +142,9 @@ public class AbstractServiceImpl extends ServiceImpl<AbstractMapper, Abstract> i
 
         Map<String, Object> introduce = new HashMap<>();
         introduce.put("activeTask", activeTask);
-        introduce.put("completedTask", completedTask);
-        introduce.put("Abnormal", Abnormal);
-        introduce.put("Normal", Normal);
+        introduce.put("completedTask", completedTaskList);
+        introduce.put("Abnormal", AbnormalList);
+        introduce.put("Normal", NormalList);
 
         Map<String, Object> result = new HashMap<>();
         result.put("introduce", introduce);
