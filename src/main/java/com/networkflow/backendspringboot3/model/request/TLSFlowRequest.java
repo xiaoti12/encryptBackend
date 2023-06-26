@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 @Data
 public class TLSFlowRequest {
     private String TaskID;
-    private String FlowId;
+    private String FlowID;
     private LocalDateTime BeginTime;
     private String SrcIP;
     private String DstIP;

@@ -214,7 +214,8 @@ class DetectTask {
         log.info("执行Python的线程名字为 = " + Thread.currentThread().getName());
         try {
             String condaEnv = "tig";
-            ProcessBuilder processBuilder = new ProcessBuilder("/home/fsc/anaconda3/envs/tig/bin/python", scriptPath, "--file_path", currentTask.getPcapPath(), "--taskid", currentTask.getTaskId());
+            ProcessBuilder processBuilder = new ProcessBuilder("/home/fsc/anaconda3/envs/tig/bin/python", scriptPath, "--file_path", currentTask.getPcapPath(), "--taskid", currentTask.getTaskId(),"--model",currentTask.getModel());
+            // processBuilder.directory(new File("/home/fsc/liujy/platform_display/backend/core_python"));
             Process process = processBuilder.start();
 
             // 处理脚本的输出

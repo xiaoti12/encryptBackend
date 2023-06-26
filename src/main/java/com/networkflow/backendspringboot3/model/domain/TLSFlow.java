@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 public class TLSFlow {
     @TableId
     private String TaskID;
-    private String FlowId;
+    private String FlowID;
     private LocalDateTime BeginTime;
     private String SrcIP;
     private String DstIP;
