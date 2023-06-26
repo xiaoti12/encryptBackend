@@ -33,3 +33,6 @@ build/
 .vscode/
 /core/upload/
 /core_go/upload/
+
+### PYTHON CORE ###
+/core_python
