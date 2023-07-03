@@ -64,8 +64,8 @@ public class AbstractServiceImpl extends ServiceImpl<AbstractMapper, Abstract> i
             String day = createTime.toLocalDate().toString();
             String taskId = task.getTaskId();
 
-            Long abnormalFlow = tlsFlowMapper.selectCount(new QueryWrapper<TLSFlow>().lambda().eq(TLSFlow::getClassification, 1).eq(TLSFlow::getTaskID, taskId));
-            Long normalFlow = tlsFlowMapper.selectCount(new QueryWrapper<TLSFlow>().lambda().eq(TLSFlow::getClassification, 0).eq(TLSFlow::getTaskID, taskId));
+            Long abnormalFlow = tlsFlowMapper.selectCount(new QueryWrapper<TLSFlow>().lambda().eq(TLSFlow::getClassification, "black").eq(TLSFlow::getTaskID, taskId));
+            Long normalFlow = tlsFlowMapper.selectCount(new QueryWrapper<TLSFlow>().lambda().eq(TLSFlow::getClassification, "white").eq(TLSFlow::getTaskID, taskId));
 
             completedTask.put(day, completedTask.getOrDefault(day, 0) + 1);
             Abnormal.put(day, Abnormal.getOrDefault(day, 0L) + abnormalFlow);
@@ -112,8 +112,8 @@ public class AbstractServiceImpl extends ServiceImpl<AbstractMapper, Abstract> i
         }
 
         // 所有流
-        Long abnormalFlowAll = tlsFlowMapper.selectCount(new QueryWrapper<TLSFlow>().lambda().eq(TLSFlow::getClassification, 1));
-        Long normalFlowAll = tlsFlowMapper.selectCount(new QueryWrapper<TLSFlow>().lambda().eq(TLSFlow::getClassification, 0));
+        Long abnormalFlowAll = tlsFlowMapper.selectCount(new QueryWrapper<TLSFlow>().lambda().eq(TLSFlow::getClassification, "black"));
+        Long normalFlowAll = tlsFlowMapper.selectCount(new QueryWrapper<TLSFlow>().lambda().eq(TLSFlow::getClassification, "white"));
         Map<String, Long> abnormalFlowBinary = new HashMap<>();
         abnormalFlowBinary.put("normal", normalFlowAll);
         abnormalFlowBinary.put("abnormal", abnormalFlowAll);
@@ -125,7 +125,7 @@ public class AbstractServiceImpl extends ServiceImpl<AbstractMapper, Abstract> i
         // 异常事件(返回UEFlow和TimeFlow中所有status为1的流，并以时间倒序排序)
         QueryWrapper<TLSFlow> queryWrapper = new QueryWrapper<>();
         // queryWrapper.lambda().eq(UEFlow::getStatusFlow, 1).orderByDesc(UEFlow::getLatestTime);
-        queryWrapper.lambda().eq(TLSFlow::getClassification, 1).orderByDesc(TLSFlow::getBeginTime);
+        queryWrapper.lambda().eq(TLSFlow::getClassification, "black").orderByDesc(TLSFlow::getBeginTime);
         List<TLSFlow> abnormalEvent = tlsFlowMapper.selectList(queryWrapper);
 
 

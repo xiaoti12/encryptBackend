@@ -177,13 +177,13 @@ public class TaskServiceImpl extends ServiceImpl<TaskMapper, Task> implements Ta
     @Scheduled(cron = "0/5 * *  * * ? ")
     @Override
     public void checkStatus() {
-        log.info("执行Java的线程名字为 = " + Thread.currentThread().getName());
+        // log.info("执行Java的线程名字为 = " + Thread.currentThread().getName());
 
         QueryWrapper<Task> queryWrapper = new QueryWrapper<>();
         queryWrapper.lambda().eq(Task::getStatus, 1);
         List<Task> list = taskMapper.selectList(queryWrapper);
 
-        log.info("list = " + list);
+        // log.info("list = " + list);
         for (Task task : list) {
             String currentTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
             task.setStatus(2);
