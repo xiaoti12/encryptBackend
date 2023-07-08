@@ -25,6 +25,8 @@ public interface TaskService extends IService<Task> {
     // 开始任务
     R startTask(String[] taskIds);
 
+    // 停止任务
+    R exitTask(String[] taskIds);
     // 根据Task修改
     boolean updateTaskByTask(Task task);
 

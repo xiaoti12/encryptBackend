@@ -174,6 +174,26 @@ public class TaskServiceImpl extends ServiceImpl<TaskMapper, Task> implements Ta
         }
     }
 
+    @Override
+    public R exitTask(String[] taskIds) {
+        int successCount = 0;
+        for (String taskId : taskIds) {
+            Task task = new Task();
+            task.setTaskId(taskId);
+            task.setStatus(6);
+            if (taskMapper.updateById(task) > 0) {
+                successCount++;
+            }
+        }
+        if (successCount == taskIds.length) {
+            return R.success("开始成功");
+        } else if (successCount > 0 && successCount < taskIds.length) {
+            return R.success("部分开始成功");
+        } else {
+            return R.error("开始失败");
+        }
+    }
+
     @Scheduled(cron = "0/5 * *  * * ? ")
     @Override
     public void checkStatus() {
@@ -192,8 +212,17 @@ public class TaskServiceImpl extends ServiceImpl<TaskMapper, Task> implements Ta
             if (taskMapper.updateById(task) > 0) {
                 // detectTask.executeGoScript(System.getProperty("user.dir") + System.getProperty("file.separator") + "core" +
                 //         System.getProperty("file.separator") + "springboot.py", task);
-                detectTask.executePythonScript(System.getProperty("user.dir") + System.getProperty("file.separator") + "core_python" +
+                if (task.getMode() == 0)
+                    detectTask.executePythonScript(System.getProperty("user.dir") + System.getProperty("file.separator") + "core_python" +
                         System.getProperty("file.separator") + "main.py", task);
+
+                else if(task.getMode() == 1) {
+                    String osName = System.getProperty("os.name").toLowerCase();
+                    String onlineExe = osName.contains("win")?"fileWatcher.exe":"fileWatcher";
+                    detectTask.executeOnlineScript(System.getProperty("user.dir") + System.getProperty("file.separator") + "core" +
+                                System.getProperty("file.separator") + onlineExe, task);
+                }
+
             } else {
                 log.info("启动成功");
             }
@@ -254,11 +283,10 @@ class DetectTask {
         }
     }
     @Async("checkTaskPool")
-    public void executeGoScript(String scriptPath, Task currentTask) {
-        log.info("执行Go的线程名字为 = " + Thread.currentThread().getName());
+    public void executeOnlineScript(String scriptPath, Task currentTask) {
+        log.info("执行在线检测的线程名字为 = " + Thread.currentThread().getName());
         try {
-            ProcessBuilder processBuilder = new ProcessBuilder("C:\\Users\\HorizonHe\\sdk\\go1.20.4\\bin\\go.exe", "run", "main.go", "--pcap_path", "..\\upload\\"+currentTask.getPcapPath(), "--taskid", currentTask.getTaskId());
-            processBuilder.directory(new File("E:\\Code\\web\\backendspringboot3\\core_go\\sctp_flowmap"));
+            ProcessBuilder processBuilder = new ProcessBuilder(scriptPath, "--taskid", currentTask.getTaskId());
             Process process = processBuilder.start();
 
             BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
@@ -268,30 +296,25 @@ class DetectTask {
             }
 
             int exitCode = process.waitFor();
-            log.info("Go脚本执行完毕，退出码：" + exitCode);
+            log.info("在线脚本执行完毕，退出码：" + exitCode);
 
             Task task = new Task();
             task.setTaskId(currentTask.getTaskId());
             if (exitCode == 0)
-                task.setStatus(3);
+                task.setStatus(5);
             else {
                 task.setStatus(100);
             }
 
             if (taskMapper.updateById(task) > 0) {
                 if (exitCode == 0)
-                    log.info("解析完成");
+                    log.info("在线检测完成");
                 else{
-                    log.info("解析失败");
-                    return;
+                    log.info("在线检测失败");
                 }
             } else {
-                log.info("解析失败");
-                return;
+                log.info("在线解析失败");
             }
-
-            executePythonScript(System.getProperty("user.dir") + System.getProperty("file.separator") + "core_go\\python" +
-                        System.getProperty("file.separator") + "springboot.py", currentTask);
 
         } catch (IOException | InterruptedException e) {
             e.printStackTrace();
