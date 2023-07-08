@@ -18,7 +18,7 @@ public class Task {
     private LocalDateTime startTime;
     private LocalDateTime endTime;
 
-    // mode: 0 为实时流量检测，1 为离线流量检测
+    // mode: 0 为离线流量检测，1 为在线流量检测
     private Integer mode;
     // model: 检测模型
     private String model;
