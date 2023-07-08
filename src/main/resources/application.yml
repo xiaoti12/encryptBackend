@@ -1,6 +1,6 @@
 spring:
   datasource:
-    url: jdbc:clickhouse:http://10.3.242.84:8123/TLS
+    url: jdbc:clickhouse:http://clickhousedocker:8123/TLS
     username: default
     password: password
     driver-class-name: com.clickhouse.jdbc.ClickHouseDriver

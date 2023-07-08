@@ -36,3 +36,5 @@ build/
 
 ### PYTHON CORE ###
 /core_python
+/core
+/core_go
