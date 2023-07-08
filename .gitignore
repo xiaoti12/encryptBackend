@@ -36,5 +36,8 @@ build/
 
 ### PYTHON CORE ###
 /core_python
-/core
 /core_go
+/core/*
+!/core/fileWatcher.go
+!/core/fileWatcher
+!/core/watch
