@@ -35,8 +35,12 @@ build/
 /core_go/upload/
 
 ### PYTHON CORE ###
-/core_python
-/core_go
-/core/*
-!/core/fileWatcher.go
-!/core/fileWatcher
+# /core_python
+# /core_go
+# /core/*
+# !/core/fileWatcher.go
+# !/core/fileWatcher
+/core/watch/*
+/core/train
+/core_python/__pycache__
+/core_python/upload/*
