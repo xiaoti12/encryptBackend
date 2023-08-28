@@ -1,0 +1,10 @@
+#separator \x09
+#set_separator	,
+#empty_field	(empty)
+#unset_field	-
+#path	reporter
+#open	2023-06-26-00-14-25
+#fields	ts	level	message	location
+#types	time	enum	string	string
+1673002664.378411	Reporter::ERROR	/home/fsc/liujy/platform_display/backend/core_python/FiveTuple/./fivetuple/Log::WRITER_SQLITE: SQLite call failed: table fivetuple has no column named pcap	(empty)
+1673002664.378411	Reporter::ERROR	/home/fsc/liujy/platform_display/backend/core_python/FiveTuple/./fivetuple/Log::WRITER_SQLITE: terminating thread	(empty)

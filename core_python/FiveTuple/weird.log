@@ -1,0 +1,19 @@
+#separator \x09
+#set_separator	,
+#empty_field	(empty)
+#unset_field	-
+#path	weird
+#open	2023-06-26-00-17-48
+#fields	ts	uid	id.orig_h	id.orig_p	id.resp_h	id.resp_p	name	addl	notice	peer	source
+#types	time	string	addr	port	addr	port	string	string	bool	string	string
+1673002654.056503	-	192.168.0.104	0	27.45.164.113	0	bad_IP_checksum	-	F	zeek	IP
+1673002661.701821	CcUYFu3emUHfESqPol	64.233.188.188	5228	192.168.0.104	3222	connection_originator_SYN_ack	-	F	zeek	TCP
+1673002661.759314	CcUYFu3emUHfESqPol	64.233.188.188	5228	192.168.0.104	3222	data_before_established	-	F	zeek	TCP
+1673002661.867852	Ca5JJF1X6SnPXZrkIi	192.168.0.104	3226	183.201.100.33	443	window_recision	-	F	zeek	-
+1673002663.175978	CHYx5r19zwhfDluu5f	192.168.0.104	3233	222.35.78.36	443	above_hole_data_without_any_acks	-	F	zeek	TCP
+1673002663.176502	CuwEeR2nSmFDtzesbi	192.168.0.104	3245	111.7.188.35	443	above_hole_data_without_any_acks	-	F	zeek	TCP
+1673002663.196869	C6zfZM3lnCh1seMYei	192.168.0.104	3243	111.7.188.35	443	above_hole_data_without_any_acks	-	F	zeek	TCP
+1673002663.226483	CQAgBj1ztW34AJ5MEc	192.168.0.104	3238	111.6.172.36	443	above_hole_data_without_any_acks	-	F	zeek	TCP
+1673002663.713017	CYptw72eI8M7BOLaA8	192.168.0.104	3250	222.35.78.48	443	above_hole_data_without_any_acks	-	F	zeek	TCP
+1673002663.798847	CcnZg929vT8Yhqc8e9	192.168.0.104	3237	204.79.197.214	443	above_hole_data_without_any_acks	-	F	zeek	TCP
+#close	2023-06-26-00-17-48

@@ -1,0 +1,10 @@
+#separator \x09
+#set_separator	,
+#empty_field	(empty)
+#unset_field	-
+#path	tls
+#open	2023-06-26-01-17-32
+#fields	pcap	ts	uid	id.orig_h	id.orig_p	id.resp_h	id.resp_p	duration	or_spl	server_version	client_version	cipher	client_ciphers	sni	ssl_client_exts	ssl_server_exts	ssl_established	client_supported_versions	server_supported_version	issuer	subject	cert_num	not_before	not_after	san_num	ext_num
+#types	string	time	string	addr	port	addr	port	interval	vector[int]	count	count	count	vector[count]	vector[string]	vector[count]	vector[count]	bool	vector[count]	count	string	string	count	time	time	count	count
+../upload/mta_tls.pcap	1578671301.016864	CLOjR64A7Wz3rkPA9l	10.1.10.101	49221	31.24.228.175	443	60.656978	-121,1234,-134,59,-229,181	769	769	49172	47,53,5,10,49171,49172,49161,49162,50,56,19,4	jupiterpluto.best	65281,0,10,11	65281,11	T	-	-	CN=rfnvPDdyNK.com	CN=rfnvPDdyNK.com	1	1578618051.000000	1610154051.000000	-	3
+#close	2023-06-26-01-17-32
