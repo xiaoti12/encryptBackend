@@ -68,7 +68,8 @@ public class TaskServiceImpl extends ServiceImpl<TaskMapper, Task> implements Ta
         BeanUtils.copyProperties(createTaskRequest, task);
         if (uploadFile != null) {
             String fileName = uploadFile.getOriginalFilename();
-            String filePath = System.getProperty("user.dir") + System.getProperty("file.separator") + "core_python" + System.getProperty("file.separator") + "upload";
+            String filePath = System.getProperty("user.dir") + System.getProperty("file.separator") + "core_python"
+                    + System.getProperty("file.separator") + "upload";
             File file = new File(filePath);
             if (!file.exists()) {
                 if (!file.mkdir()) {
@@ -98,7 +99,8 @@ public class TaskServiceImpl extends ServiceImpl<TaskMapper, Task> implements Ta
         BeanUtils.copyProperties(createTaskRequest, task);
         if (uploadFile != null) {
             String fileName = uploadFile.getOriginalFilename();
-            String filePath = System.getProperty("user.dir") + System.getProperty("file.separator") + "core_python" + System.getProperty("file.separator") + "upload";
+            String filePath = System.getProperty("user.dir") + System.getProperty("file.separator") + "core_python"
+                    + System.getProperty("file.separator") + "upload";
             File file = new File(filePath);
             if (!file.exists()) {
                 if (!file.mkdir()) {
@@ -134,7 +136,6 @@ public class TaskServiceImpl extends ServiceImpl<TaskMapper, Task> implements Ta
         }
     }
 
-
     @Override
     public R deleteTask(String[] taskIds) {
         if (taskMapper.deleteBatchIds(Arrays.asList(taskIds)) > 0) {
@@ -157,8 +158,10 @@ public class TaskServiceImpl extends ServiceImpl<TaskMapper, Task> implements Ta
             task.setTaskId(taskId);
             task.setStatus(1);
             // 清除缓存
-            // timeFlowMapper.delete(new QueryWrapper<TimeFlow>().lambda().eq(TimeFlow::getTaskID, taskId));
-            // ueFlowMapper.delete(new QueryWrapper<UEFlow>().lambda().eq(UEFlow::getTaskID, taskId));
+            // timeFlowMapper.delete(new
+            // QueryWrapper<TimeFlow>().lambda().eq(TimeFlow::getTaskID, taskId));
+            // ueFlowMapper.delete(new QueryWrapper<UEFlow>().lambda().eq(UEFlow::getTaskID,
+            // taskId));
             tlsFlowMapper.delete(new QueryWrapper<TLSFlow>().lambda().eq(TLSFlow::getTaskID, taskId));
 
             if (taskMapper.updateById(task) > 0) {
@@ -166,6 +169,7 @@ public class TaskServiceImpl extends ServiceImpl<TaskMapper, Task> implements Ta
             }
         }
         if (successCount == taskIds.length) {
+            // 开始监听网口
             return R.success("开始成功");
         } else if (successCount > 0 && successCount < taskIds.length) {
             return R.success("部分开始成功");
@@ -210,17 +214,23 @@ public class TaskServiceImpl extends ServiceImpl<TaskMapper, Task> implements Ta
             task.setStartTime(LocalDateTime.parse(currentTime, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
             taskMapper.updateById(task);
             if (taskMapper.updateById(task) > 0) {
-                // detectTask.executeGoScript(System.getProperty("user.dir") + System.getProperty("file.separator") + "core" +
-                //         System.getProperty("file.separator") + "springboot.py", task);
+                // detectTask.executeGoScript(System.getProperty("user.dir") +
+                // System.getProperty("file.separator") + "core" +
+                // System.getProperty("file.separator") + "springboot.py", task);
                 if (task.getMode() == 0)
-                    detectTask.executePythonScript(System.getProperty("user.dir") + System.getProperty("file.separator") + "core_python" +
-                        System.getProperty("file.separator") + "main.py", task);
+                    detectTask.executePythonScript(
+                            System.getProperty("user.dir") + System.getProperty("file.separator") + "core_python" +
+                                    System.getProperty("file.separator") + "main.py",
+                            task);
 
-                else if(task.getMode() == 1) {
+                else if (task.getMode() == 1) {
+                    // 添加zeek启动脚本
                     String osName = System.getProperty("os.name").toLowerCase();
-                    String onlineExe = osName.contains("win")?"fileWatcher.exe":"fileWatcher";
-                    detectTask.executeOnlineScript(System.getProperty("user.dir") + System.getProperty("file.separator") + "core" +
-                                System.getProperty("file.separator") + onlineExe, task);
+                    String onlineExe = osName.contains("win") ? "fileWatcher.exe" : "fileWatcher";
+                    detectTask.executeOnlineScript(
+                            System.getProperty("user.dir") + System.getProperty("file.separator") + "core" +
+                                    System.getProperty("file.separator") + onlineExe,
+                            task);
                 }
 
             } else {
@@ -242,9 +252,12 @@ class DetectTask {
     public void executePythonScript(String scriptPath, Task currentTask) {
         log.info("执行Python的线程名字为 = " + Thread.currentThread().getName());
         try {
-            String condaEnv = "tig";
-            ProcessBuilder processBuilder = new ProcessBuilder("/home/fsc/anaconda3/envs/tig/bin/python", scriptPath, "--file_path", currentTask.getPcapPath(), "--taskid", currentTask.getTaskId(),"--model",currentTask.getModel());
-            // processBuilder.directory(new File("/home/fsc/liujy/platform_display/backend/core_python"));
+            // String condaEnv = "/home/fsc/anaconda3/envs/tig/bin/python";
+            String pyEnv = "python3";
+            ProcessBuilder processBuilder = new ProcessBuilder(pyEnv, scriptPath, "--file_path",
+                    currentTask.getPcapPath(), "--taskid", currentTask.getTaskId(), "--model", currentTask.getModel());
+            // processBuilder.directory(new
+            // File("/home/fsc/liujy/platform_display/backend/core_python"));
             Process process = processBuilder.start();
 
             // 处理脚本的输出
@@ -268,7 +281,7 @@ class DetectTask {
             if (taskMapper.updateById(task) > 0) {
                 if (exitCode == 0)
                     log.info("检测完成");
-                else{
+                else {
                     log.info("检测失败");
                 }
             } else {
@@ -282,11 +295,12 @@ class DetectTask {
             }
         }
     }
+
     @Async("checkTaskPool")
     public void executeOnlineScript(String scriptPath, Task currentTask) {
         log.info("执行在线检测的线程名字为 = " + Thread.currentThread().getName());
         try {
-            ProcessBuilder processBuilder = new ProcessBuilder(scriptPath, "--taskid", currentTask.getTaskId());
+            ProcessBuilder processBuilder = new ProcessBuilder(scriptPath, "--taskid", currentTask.getTaskId(),"--netcard",currentTask.getNetcard());
             Process process = processBuilder.start();
 
             BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));

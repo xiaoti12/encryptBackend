@@ -40,4 +40,3 @@ build/
 /core/*
 !/core/fileWatcher.go
 !/core/fileWatcher
-!/core/watch/

@@ -3,10 +3,13 @@ package main
 import (
 	"database/sql"
 	"flag"
+	"fmt"
 	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
+	"syscall"
 	"time"
 
 	_ "github.com/ClickHouse/clickhouse-go"
@@ -14,7 +17,8 @@ import (
 )
 
 var watcher, _ = fsnotify.NewWatcher()
-var done = make(chan bool)
+var allDone = make(chan bool)
+var zeekDone = make(chan bool)
 
 func main() {
 	// watcher, err := fsnotify.NewWatcher()
@@ -22,29 +26,46 @@ func main() {
 	defer watcher.Close()
 
 	var taskId string
+	var netCard string
 	flag.StringVar(&taskId, "taskid", "", "task ID")
+	flag.StringVar(&netCard, "netcard", "", "network card name")
 	flag.Parse()
-	if taskId == "" {
-		log.Println("no task ID argument!")
+	if taskId == "" || netCard == "" {
+		log.Println("lack of arguments!")
 		flag.Usage()
 		os.Exit(1)
 	}
 
+	go runZeek(netCard)
 	go watchLogFile(taskId)
 	go watchDBStatus(taskId)
 
+	// 将工作/监视目录设为当前目录下的watch文件夹
 	workingPath, _ := os.Executable()
 	workingPath = filepath.Dir(workingPath)
 	watchingPath := filepath.Join(workingPath, "watch")
-	log.Println("watching path:", watchingPath)
+	os.Chdir(workingPath)
+	fmt.Println("watching path:", watchingPath)
 	err := watcher.Add(watchingPath)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	<-done
-	log.Println("stop watching...")
+	<-allDone
+	fmt.Println("stop watching...")
 	os.Exit(0)
+}
+
+func runZeek(netcard string) {
+	cmd := exec.Command("zeek", "-i", netcard, "../tls.zeek")
+	err := cmd.Start()
+	if err != nil {
+		fmt.Printf("error when processing %s: %s\n", netcard, err)
+	}
+	<-zeekDone
+	cmd.Process.Signal(syscall.SIGTERM)
+	fmt.Println("stop zeek...")
+	allDone <- true
 }
 
 func watchLogFile(taskId string) {
@@ -72,18 +93,18 @@ func watchLogFile(taskId string) {
 				} else {
 					start := time.Now()
 					if err != nil {
-						log.Printf("cannot get file absolute path:%s\n", err)
+						fmt.Printf("cannot get file absolute path:%s\n", err)
 						continue
 					}
-					log.Println("process:", absolutePath)
+					fmt.Println("process:", absolutePath)
 
-					// cmd := exec.Command("python", "log_predict.py", "--log", absolutePath, "--taskid", taskId)
-					// output, err := cmd.Output()
-					// log.Printf("%s", string(output))
+					cmd := exec.Command("python3", "log_predict.py", "--log", absolutePath, "--taskid", taskId)
+					output, err := cmd.Output()
+					fmt.Printf("%s", string(output))
 					if err != nil {
-						log.Printf("error when processing %s: %s\n", absolutePath, err)
+						fmt.Printf("error when processing %s: %s\n", absolutePath, err)
 					}
-					log.Println("Duration:", time.Since(start))
+					fmt.Println("Duration:", time.Since(start))
 				}
 			}
 			// if event.Op&fsnotify.Rename == fsnotify.Rename {
@@ -102,7 +123,7 @@ func watchLogFile(taskId string) {
 func watchDBStatus(taskId string) {
 	// time.Sleep(10 * time.Second)
 	// done <- true
-	conn, err := sql.Open("clickhouse", "tcp://10.3.242.84:9000?&compress=true&debug=false&password=password&database=TLS")
+	conn, err := sql.Open("clickhouse", "tcp://localhost:9000?&compress=true&debug=false&password=password&database=TLS")
 	if err != nil {
 		log.Printf("failed to connect to clickhouse:%s\n", err)
 		return
@@ -123,7 +144,7 @@ func watchDBStatus(taskId string) {
 			continue
 		}
 		if status == 6 {
-			done <- true
+			zeekDone <- true
 		}
 		// log.Println("status: ", status)
 	}

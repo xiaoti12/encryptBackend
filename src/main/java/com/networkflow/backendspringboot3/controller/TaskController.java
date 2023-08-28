@@ -31,6 +31,7 @@ public class TaskController {
                         @RequestParam("createTime") String createTime,
                         @RequestParam("mode") Integer mode,
                         @RequestParam(name = "model", required = false) String model,
+                        @RequestParam(name = "netcard", required = false) String netcard,
                         @RequestParam("status") Integer status,
                         @RequestParam(name = "pcapFile", required = false) MultipartFile file) {
         TaskRequest taskRequest = new TaskRequest();
@@ -39,6 +40,7 @@ public class TaskController {
         taskRequest.setMode(mode);
         taskRequest.setModel(model);
         taskRequest.setStatus(status);
+        taskRequest.setNetcard(netcard);
         return taskService.createTask(taskRequest, file);
     }
 

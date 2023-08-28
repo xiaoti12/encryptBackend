@@ -24,6 +24,8 @@ public class TaskRequest {
     private Integer abnormal;
     // 总数据包数
     private Integer total;
+    // 网口名称
+    private String netcard;
 
     // status：0 未启动；1 等待解析中；2 正在解析和检测中；3 完成解析聚合，正在检测中；4 正在汇总中；5 已完成。
     private Integer status;
