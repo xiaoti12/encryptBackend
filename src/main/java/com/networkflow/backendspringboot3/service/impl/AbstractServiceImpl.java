@@ -45,9 +45,9 @@ public class AbstractServiceImpl extends ServiceImpl<AbstractMapper, Abstract> i
         // 介绍栏
         // 活跃任务
         Map<String, Integer> activeTask = new HashMap<>();
-        // 活跃任务——在线任务数(统计任务表中有多少mode为1的任务)
+        // 总任务——在线任务数(统计任务表中有多少mode为1的任务)
         Long online = taskMapper.selectCount(new QueryWrapper<Task>().eq("mode", 1));
-        // 活跃任务——离线任务数(统计任务表中有多少mode为1的任务)
+        // 总任务——离线任务数(统计任务表中有多少mode为0的任务)
         Long offline = taskMapper.selectCount(new QueryWrapper<Task>().lambda().eq(Task::getMode, 0));
         activeTask.put("online", online.intValue());
         activeTask.put("offline", offline.intValue());
