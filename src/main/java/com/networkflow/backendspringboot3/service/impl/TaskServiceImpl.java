@@ -5,7 +5,9 @@ import cn.hutool.log.LogFactory;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.networkflow.backendspringboot3.common.R;
+import com.networkflow.backendspringboot3.mapper.TLSFlowMapper;
 import com.networkflow.backendspringboot3.mapper.TaskMapper;
+import com.networkflow.backendspringboot3.model.domain.TLSFlow;
 import com.networkflow.backendspringboot3.model.domain.Task;
 import com.networkflow.backendspringboot3.model.request.TaskRequest;
 import com.networkflow.backendspringboot3.service.TaskService;
@@ -36,6 +38,8 @@ public class TaskServiceImpl extends ServiceImpl<TaskMapper, Task> implements Ta
     private final TaskManager taskManager;
     @Autowired
     private TaskMapper taskMapper;
+    @Autowired
+    private TLSFlowMapper tlsFlowMapper;
 
     public TaskServiceImpl(DetectTask detectTask, TaskManager taskManager) {
         this.detectTask = detectTask;
@@ -55,18 +59,9 @@ public class TaskServiceImpl extends ServiceImpl<TaskMapper, Task> implements Ta
             return null;
         }
         String fileName = uploadFile.getOriginalFilename();
-        // 求文件后缀
-        String extension = "";
-        if (fileName != null) {
-            int dotIndex = fileName.lastIndexOf('.');
-            if (dotIndex != -1 && dotIndex < fileName.length() - 1) {
-                extension = fileName.substring(dotIndex + 1);
-            }
-        }
-        String trueFileName = taskId + "." + extension;
 
         // 检查文件存储位置是否存在
-        String filePath = System.getProperty("user.dir") + System.getProperty("file.separator") + "core"
+        String filePath = System.getProperty("user.dir") + System.getProperty("file.separator") + "corev2"
                 + System.getProperty("file.separator") + "upload";
         File file = new File(filePath);
         if (!file.exists()) {
@@ -75,10 +70,10 @@ public class TaskServiceImpl extends ServiceImpl<TaskMapper, Task> implements Ta
             }
         }
         // 文件路径
-        File dest = new File(filePath + System.getProperty("file.separator") + trueFileName);
+        File dest = new File(filePath + System.getProperty("file.separator") + fileName);
         try {
             uploadFile.transferTo(dest);
-            return trueFileName;
+            return fileName;
         } catch (IOException e) {
             return null;
         }
@@ -141,19 +136,19 @@ public class TaskServiceImpl extends ServiceImpl<TaskMapper, Task> implements Ta
     public R deleteTask(String[] taskIds) {
         for (String taskId : taskIds) {
             // 检查文件存储位置是否存在
+            String pcapname = taskMapper.selectById(taskId).getPcapPath();
             String filePath = System.getProperty("user.dir") + System.getProperty("file.separator") + "corev2" +
-                    System.getProperty("file.separator") + "upload" + System.getProperty("file.separator") + taskId
-                    + ".pcap";
+                    System.getProperty("file.separator") + "upload" + System.getProperty("file.separator") + pcapname;
             File file = new File(filePath);
             if (file.exists()) {
                 boolean deleted = file.delete();
                 if (deleted) {
-                    System.out.println("文件删除成功");
+                    log.info("文件删除成功");
                 } else {
-                    System.out.println("文件删除失败");
+                    log.info("文件删除失败");
                 }
             } else {
-                System.out.println("文件不存在");
+                log.info("文件不存在");
             }
         }
         if (taskMapper.deleteBatchIds(Arrays.asList(taskIds)) > 0) {
@@ -181,6 +176,7 @@ public class TaskServiceImpl extends ServiceImpl<TaskMapper, Task> implements Ta
             task.setNormal(null);
             task.setTotal(null);
             // 清除缓存
+            deleteCache(taskId);
             if (taskMapper.updateById(task) > 0) {
                 successCount++;
             }
@@ -192,6 +188,10 @@ public class TaskServiceImpl extends ServiceImpl<TaskMapper, Task> implements Ta
         } else {
             return R.error("开始失败");
         }
+    }
+
+    private void deleteCache(String taskId) {
+        tlsFlowMapper.delete(new QueryWrapper<TLSFlow>().lambda().eq(TLSFlow::getTaskID, taskId));
     }
 
     @Override
@@ -286,7 +286,7 @@ class DetectTask {
             Process process = processBuilder.start();
             taskManager.addTaskProcess(currentTask.getTaskId(), process);
 
-            log.info("任务: " + currentTask.getTaskId() + " 检测脚本运行的PID为:" + process.pid());
+            // log.info("任务: " + currentTask.getTaskId() + " 检测脚本运行的PID为:" + process.pid());
             reader = new BufferedReader(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8));
             while ((line = reader.readLine()) != null) {
                 log.info("任务: " + currentTask.getTaskId() + " " + line);
@@ -294,12 +294,25 @@ class DetectTask {
             int exitCode = process.waitFor();
             reader.close();
             taskManager.stopTask(currentTask.getTaskId());
+
+            Task task = new Task();
+            task.setTaskId(currentTask.getTaskId());
+            if (exitCode == 0)
+                task.setStatus(5);
+            else
+                task.setStatus(100);
+            String currentTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+            task.setEndTime(LocalDateTime.parse(currentTime, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+            taskMapper.updateById(task);
+
             log.info("任务: " + currentTask.getTaskId() + " 检测成功, 已停止, 退出码为: " + exitCode);
         } catch (IOException | InterruptedException e) {
             e.printStackTrace();
             Task task = new Task();
             task.setTaskId(currentTask.getTaskId());
             task.setStatus(100);
+            String currentTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+            task.setEndTime(LocalDateTime.parse(currentTime, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
             taskMapper.updateById(task);
             taskManager.stopTask(currentTask.getTaskId());
             log.info("任务: " + currentTask.getTaskId() + " 检测失败, 已停止");

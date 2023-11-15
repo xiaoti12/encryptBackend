@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class TLSFlowController {
     @Autowired
     private TLSFlowService tlsFlowService;
+
     @Operation(summary = "获取所有用户信息")
     @GetMapping("/getAllUEFlow")
     public R getAllTask() {
@@ -25,10 +26,6 @@ public class TLSFlowController {
     @Operation(summary = "获取所有UE聚合流信息")
     @GetMapping("/getUEFlowByTaskId")
     public R getUEFlowByTaskId(@RequestParam("taskId") String taskId) {
-        int index = taskId.indexOf('?');
-        if (index != -1) {
-            taskId = taskId.substring(0, index);
-        }
         return tlsFlowService.getTLSFlowByTaskId(taskId);
     }
 }

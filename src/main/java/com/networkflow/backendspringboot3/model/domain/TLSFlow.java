@@ -5,7 +5,6 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
-import java.math.BigInteger;
 import java.time.LocalDateTime;
 
 @TableName(value = "TLSFlow")

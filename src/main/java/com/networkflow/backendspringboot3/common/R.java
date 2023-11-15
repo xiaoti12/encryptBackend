@@ -35,7 +35,7 @@ public class R {
 
     public static R error(String message) {
         R r = success(message);
-        r.setSuccess(false);
+        // r.setSuccess(false);
         r.setType("error");
         return r;
     }
@@ -46,4 +46,3 @@ public class R {
         return r;
     }
 }
-

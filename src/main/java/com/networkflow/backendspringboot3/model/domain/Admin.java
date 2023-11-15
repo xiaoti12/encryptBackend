@@ -5,15 +5,13 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
-
-@TableName(value = "admin")
 @Data
 public class Admin {
     @TableId
-    private Integer id;
     private String name;
-    private String password;
-    private String filepath;
+    private String avatar;
+    private String access;
+
     @Override
     public String toString() {
         return ToStringBuilder.reflectionToString(this);

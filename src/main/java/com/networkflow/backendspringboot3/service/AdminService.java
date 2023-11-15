@@ -8,15 +8,10 @@ import jakarta.servlet.http.HttpSession;
 import org.springframework.web.multipart.MultipartFile;
 
 public interface AdminService extends IService<Admin> {
-    R verifyPasswd(AdminRequest adminRequest, HttpSession session);
 
-    R allUser();
+    R getCurrentUser();
 
-    R addUser(AdminRequest addUserRequest, MultipartFile file);
+    R outLogin();
 
-    R updateUser(AdminRequest updateUserRequest);
-
-    R deleteUser(Integer userId);
-
-    void checkUser();
+    R login(String username, String password);
 }
