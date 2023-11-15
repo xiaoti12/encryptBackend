@@ -6,8 +6,7 @@ import com.networkflow.backendspringboot3.common.R;
 import com.networkflow.backendspringboot3.mapper.*;
 import com.networkflow.backendspringboot3.model.domain.Abstract;
 import com.networkflow.backendspringboot3.model.domain.Task;
-import com.networkflow.backendspringboot3.model.domain.TimeFlow;
-import com.networkflow.backendspringboot3.model.domain.UEFlow;
+
 import com.networkflow.backendspringboot3.model.domain.TLSFlow;
 import com.networkflow.backendspringboot3.service.AbstractService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,13 +23,7 @@ public class AbstractServiceImpl extends ServiceImpl<AbstractMapper, Abstract> i
     @Autowired
     private AbstractMapper abstractMapper;
     @Autowired
-    private PacketMapper packetMapper;
-    @Autowired
     private TaskMapper taskMapper;
-    @Autowired
-    private TimeFlowMapper timeFlowMapper;
-    @Autowired
-    private UEFlowMapper ueFlowMapper;
     @Autowired
     private TLSFlowMapper tlsFlowMapper;
 
@@ -64,8 +57,10 @@ public class AbstractServiceImpl extends ServiceImpl<AbstractMapper, Abstract> i
             String day = createTime.toLocalDate().toString();
             String taskId = task.getTaskId();
 
-            Long abnormalFlow = tlsFlowMapper.selectCount(new QueryWrapper<TLSFlow>().lambda().eq(TLSFlow::getClassification, "black").eq(TLSFlow::getTaskID, taskId));
-            Long normalFlow = tlsFlowMapper.selectCount(new QueryWrapper<TLSFlow>().lambda().eq(TLSFlow::getClassification, "white").eq(TLSFlow::getTaskID, taskId));
+            Long abnormalFlow = tlsFlowMapper.selectCount(new QueryWrapper<TLSFlow>().lambda()
+                    .eq(TLSFlow::getClassification, "black").eq(TLSFlow::getTaskID, taskId));
+            Long normalFlow = tlsFlowMapper.selectCount(new QueryWrapper<TLSFlow>().lambda()
+                    .eq(TLSFlow::getClassification, "white").eq(TLSFlow::getTaskID, taskId));
 
             completedTask.put(day, completedTask.getOrDefault(day, 0) + 1);
             Abnormal.put(day, Abnormal.getOrDefault(day, 0L) + abnormalFlow);
@@ -112,8 +107,10 @@ public class AbstractServiceImpl extends ServiceImpl<AbstractMapper, Abstract> i
         }
 
         // 所有流
-        Long abnormalFlowAll = tlsFlowMapper.selectCount(new QueryWrapper<TLSFlow>().lambda().eq(TLSFlow::getClassification, "black"));
-        Long normalFlowAll = tlsFlowMapper.selectCount(new QueryWrapper<TLSFlow>().lambda().eq(TLSFlow::getClassification, "white"));
+        Long abnormalFlowAll = tlsFlowMapper
+                .selectCount(new QueryWrapper<TLSFlow>().lambda().eq(TLSFlow::getClassification, "black"));
+        Long normalFlowAll = tlsFlowMapper
+                .selectCount(new QueryWrapper<TLSFlow>().lambda().eq(TLSFlow::getClassification, "white"));
         Map<String, Long> abnormalFlowBinary = new HashMap<>();
         abnormalFlowBinary.put("normal", normalFlowAll);
         abnormalFlowBinary.put("abnormal", abnormalFlowAll);
@@ -124,21 +121,10 @@ public class AbstractServiceImpl extends ServiceImpl<AbstractMapper, Abstract> i
 
         // 异常事件(返回UEFlow和TimeFlow中所有status为1的流，并以时间倒序排序)
         QueryWrapper<TLSFlow> queryWrapper = new QueryWrapper<>();
-        // queryWrapper.lambda().eq(UEFlow::getStatusFlow, 1).orderByDesc(UEFlow::getLatestTime);
+        // queryWrapper.lambda().eq(UEFlow::getStatusFlow,
+        // 1).orderByDesc(UEFlow::getLatestTime);
         queryWrapper.lambda().eq(TLSFlow::getClassification, "black").orderByDesc(TLSFlow::getBeginTime);
         List<TLSFlow> abnormalEvent = tlsFlowMapper.selectList(queryWrapper);
-
-
-        // 活跃流数——已检测流(统计UEFlow和TimeFlow中共有多少status为0的流)
-        // 未被使用
-        // Long activeDetectedFlows = ueFlowMapper.selectCount(new QueryWrapper<UEFlow>().in("StatusFlow", 100, 200))
-        //         + timeFlowMapper.selectCount(new QueryWrapper<TimeFlow>().in("StatusFlow", 100, 200));
-
-        // 活跃流数——待检测流(统计UEFlow和TimeFlow中共有多少status为1的流)
-        // 未被使用
-        // Long activePendingFlows = ueFlowMapper.selectCount(new QueryWrapper<UEFlow>().eq("StatusFlow", 0))
-        //         + timeFlowMapper.selectCount(new QueryWrapper<TimeFlow>().eq("StatusFlow", 0));
-
 
         Map<String, Object> introduce = new HashMap<>();
         introduce.put("activeTask", activeTask);

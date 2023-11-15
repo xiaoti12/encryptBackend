@@ -5,15 +5,8 @@ import cn.hutool.log.LogFactory;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.networkflow.backendspringboot3.common.R;
-import com.networkflow.backendspringboot3.mapper.PacketMapper;
 import com.networkflow.backendspringboot3.mapper.TaskMapper;
-import com.networkflow.backendspringboot3.mapper.TimeFlowMapper;
-import com.networkflow.backendspringboot3.mapper.UEFlowMapper;
-import com.networkflow.backendspringboot3.mapper.TLSFlowMapper;
 import com.networkflow.backendspringboot3.model.domain.Task;
-import com.networkflow.backendspringboot3.model.domain.TimeFlow;
-import com.networkflow.backendspringboot3.model.domain.UEFlow;
-import com.networkflow.backendspringboot3.model.domain.TLSFlow;
 import com.networkflow.backendspringboot3.model.request.TaskRequest;
 import com.networkflow.backendspringboot3.service.TaskService;
 import org.springframework.beans.BeanUtils;
@@ -28,37 +21,67 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.Executor;
-import java.util.concurrent.ThreadPoolExecutor;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class TaskServiceImpl extends ServiceImpl<TaskMapper, Task> implements TaskService {
     private static final Log log = LogFactory.get();
     private final DetectTask detectTask;
+    private final TaskManager taskManager;
     @Autowired
     private TaskMapper taskMapper;
-    @Autowired
-    private TimeFlowMapper timeFlowMapper;
-    @Autowired
-    private UEFlowMapper ueFlowMapper;
-    @Autowired
-    private TLSFlowMapper tlsFlowMapper;
-    @Autowired
-    private PacketMapper packetMapper;
 
-    public TaskServiceImpl(DetectTask detectTask) {
+    public TaskServiceImpl(DetectTask detectTask, TaskManager taskManager) {
         this.detectTask = detectTask;
+        this.taskManager = taskManager;
     }
 
     @Override
     public R allTask() {
         QueryWrapper<Task> queryWrapper = new QueryWrapper<>();
-        queryWrapper.lambda().orderByAsc(Task::getCreateTime);
+        queryWrapper.lambda().orderByDesc(Task::getCreateTime);
         return R.success(null, taskMapper.selectList(queryWrapper));
+    }
+
+    // 上传文件(返回任务id命名的名字)
+    private String uploadFile(MultipartFile uploadFile, String taskId) {
+        if (uploadFile == null) {
+            return null;
+        }
+        String fileName = uploadFile.getOriginalFilename();
+        // 求文件后缀
+        String extension = "";
+        if (fileName != null) {
+            int dotIndex = fileName.lastIndexOf('.');
+            if (dotIndex != -1 && dotIndex < fileName.length() - 1) {
+                extension = fileName.substring(dotIndex + 1);
+            }
+        }
+        String trueFileName = taskId + "." + extension;
+
+        // 检查文件存储位置是否存在
+        String filePath = System.getProperty("user.dir") + System.getProperty("file.separator") + "core"
+                + System.getProperty("file.separator") + "upload";
+        File file = new File(filePath);
+        if (!file.exists()) {
+            if (!file.mkdir()) {
+                return null;
+            }
+        }
+        // 文件路径
+        File dest = new File(filePath + System.getProperty("file.separator") + trueFileName);
+        try {
+            uploadFile.transferTo(dest);
+            return trueFileName;
+        } catch (IOException e) {
+            return null;
+        }
     }
 
     @Override
@@ -66,26 +89,15 @@ public class TaskServiceImpl extends ServiceImpl<TaskMapper, Task> implements Ta
         Task task = new Task();
 
         BeanUtils.copyProperties(createTaskRequest, task);
-        if (uploadFile != null) {
-            String fileName = uploadFile.getOriginalFilename();
-            String filePath = System.getProperty("user.dir") + System.getProperty("file.separator") + "corev2"
-                    + System.getProperty("file.separator") + "upload";
-            File file = new File(filePath);
-            if (!file.exists()) {
-                if (!file.mkdir()) {
-                    return R.fatal("创建文件失败");
-                }
-            }
-            File dest = new File(filePath + System.getProperty("file.separator") + fileName);
-            String storeUrlPath = fileName;
-            try {
-                uploadFile.transferTo(dest);
-            } catch (IOException e) {
-                return R.fatal("上传失败" + e.getMessage());
-            }
-            task.setPcapPath(storeUrlPath);
-        } else
-            task.setPcapPath(null);
+
+        String trueFileName = uploadFile(uploadFile, createTaskRequest.getTaskId());
+        if (trueFileName != null) {
+            task.setPcapPath(uploadFile.getOriginalFilename());
+            // task.setTruePcapPath(trueFileName);
+        } else {
+            return R.fatal("上传文件失败");
+        }
+
         if (taskMapper.insert(task) > 0) {
             return R.success("添加成功");
         } else {
@@ -97,26 +109,15 @@ public class TaskServiceImpl extends ServiceImpl<TaskMapper, Task> implements Ta
     public R updateTask(TaskRequest createTaskRequest, MultipartFile uploadFile) {
         Task task = new Task();
         BeanUtils.copyProperties(createTaskRequest, task);
-        if (uploadFile != null) {
-            String fileName = uploadFile.getOriginalFilename();
-            String filePath = System.getProperty("user.dir") + System.getProperty("file.separator") + "corev2"
-                    + System.getProperty("file.separator") + "upload";
-            File file = new File(filePath);
-            if (!file.exists()) {
-                if (!file.mkdir()) {
-                    return R.fatal("创建文件失败");
-                }
-            }
-            File dest = new File(filePath + System.getProperty("file.separator") + fileName);
-            String storeUrlPath = fileName;
-            try {
-                uploadFile.transferTo(dest);
-            } catch (IOException e) {
-                return R.fatal("上传失败" + e.getMessage());
-            }
-            task.setPcapPath(storeUrlPath);
-        } else
-            task.setPcapPath(null);
+
+        String trueFileName = uploadFile(uploadFile, createTaskRequest.getTaskId());
+        if (trueFileName != null) {
+            task.setPcapPath(uploadFile.getOriginalFilename());
+            // task.setTruePcapPath(trueFileName);
+        } else {
+            return R.fatal("上传文件失败");
+        }
+
         if (taskMapper.updateById(task) > 0) {
             return R.success("更新成功");
         } else {
@@ -138,6 +139,23 @@ public class TaskServiceImpl extends ServiceImpl<TaskMapper, Task> implements Ta
 
     @Override
     public R deleteTask(String[] taskIds) {
+        for (String taskId : taskIds) {
+            // 检查文件存储位置是否存在
+            String filePath = System.getProperty("user.dir") + System.getProperty("file.separator") + "corev2" +
+                    System.getProperty("file.separator") + "upload" + System.getProperty("file.separator") + taskId
+                    + ".pcap";
+            File file = new File(filePath);
+            if (file.exists()) {
+                boolean deleted = file.delete();
+                if (deleted) {
+                    System.out.println("文件删除成功");
+                } else {
+                    System.out.println("文件删除失败");
+                }
+            } else {
+                System.out.println("文件不存在");
+            }
+        }
         if (taskMapper.deleteBatchIds(Arrays.asList(taskIds)) > 0) {
             return R.success("删除成功");
         } else {
@@ -157,14 +175,17 @@ public class TaskServiceImpl extends ServiceImpl<TaskMapper, Task> implements Ta
             Task task = new Task();
             task.setTaskId(taskId);
             task.setStatus(1);
-            tlsFlowMapper.delete(new QueryWrapper<TLSFlow>().lambda().eq(TLSFlow::getTaskID, taskId));
-
+            task.setStartTime(null);
+            task.setEndTime(null);
+            task.setAbnormal(null);
+            task.setNormal(null);
+            task.setTotal(null);
+            // 清除缓存
             if (taskMapper.updateById(task) > 0) {
                 successCount++;
             }
         }
         if (successCount == taskIds.length) {
-            // 开始监听网口
             return R.success("开始成功");
         } else if (successCount > 0 && successCount < taskIds.length) {
             return R.success("部分开始成功");
@@ -177,32 +198,36 @@ public class TaskServiceImpl extends ServiceImpl<TaskMapper, Task> implements Ta
     public R exitTask(String[] taskIds) {
         int successCount = 0;
         for (String taskId : taskIds) {
+            taskManager.stopTask(taskId);
             Task task = new Task();
             task.setTaskId(taskId);
-            task.setStatus(6);
+            task.setStatus(200);
+            task.setEndTime(null);
+            task.setAbnormal(null);
+            task.setNormal(null);
+            task.setTotal(null);
             if (taskMapper.updateById(task) > 0) {
                 successCount++;
             }
         }
         if (successCount == taskIds.length) {
-            return R.success("开始成功");
+            return R.success("停止成功");
         } else if (successCount > 0 && successCount < taskIds.length) {
-            return R.success("部分开始成功");
+            return R.success("部分停止成功");
         } else {
-            return R.error("开始失败");
+            return R.error("停止失败");
         }
     }
 
     @Scheduled(cron = "0/5 * *  * * ? ")
     @Override
     public void checkStatus() {
-        // log.info("执行Java的线程名字为 = " + Thread.currentThread().getName());
+        // log.info("轮询数据库, 线程名字为 = " + Thread.currentThread().getName());
 
         QueryWrapper<Task> queryWrapper = new QueryWrapper<>();
         queryWrapper.lambda().eq(Task::getStatus, 1);
         List<Task> list = taskMapper.selectList(queryWrapper);
 
-        // log.info("list = " + list);
         for (Task task : list) {
             String currentTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
             task.setStatus(2);
@@ -218,7 +243,7 @@ public class TaskServiceImpl extends ServiceImpl<TaskMapper, Task> implements Ta
                         task);
 
             } else {
-                log.info("启动成功");
+                log.info("启动失败");
             }
         }
     }
@@ -227,17 +252,22 @@ public class TaskServiceImpl extends ServiceImpl<TaskMapper, Task> implements Ta
 @Component
 class DetectTask {
     private static final Log log = LogFactory.get();
+    private final TaskManager taskManager;
     @Autowired
     private TaskMapper taskMapper;
-    @Autowired
-    private Executor checkTaskPool;
+
+    DetectTask(TaskManager taskManager) {
+        this.taskManager = taskManager;
+    }
 
     @Async("checkTaskPool")
     public void executePythonScript(String scriptPath, Task currentTask) {
-        log.info("执行Python的线程名字为 = " + Thread.currentThread().getName());
         try {
+            String line;
+            BufferedReader reader;
             String pyEnv = "/home/fsc/anaconda3/envs/tig/bin/python";
-            // String pyEnv = "python3";
+            // Go解析脚本
+            log.info("任务: " + currentTask.getTaskId() + " 执行检测, 线程名字为 = " + Thread.currentThread().getName());
             ProcessBuilder processBuilder;
             if (currentTask.getMode() == 0) {
                 processBuilder = new ProcessBuilder(pyEnv, scriptPath,
@@ -252,83 +282,47 @@ class DetectTask {
                         "--mode", "live",
                         "--interface", currentTask.getNetcard());
             }
-            // processBuilder.directory(new
-            // File("/home/fsc/liujy/platform_display/backend/core_python"));
+            processBuilder.redirectErrorStream(true); // 合并标准输出和标准错误流
             Process process = processBuilder.start();
+            taskManager.addTaskProcess(currentTask.getTaskId(), process);
 
-            // 处理脚本的输出
-            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-            String line;
+            log.info("任务: " + currentTask.getTaskId() + " 检测脚本运行的PID为:" + process.pid());
+            reader = new BufferedReader(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8));
             while ((line = reader.readLine()) != null) {
-                log.info(line);
+                log.info("任务: " + currentTask.getTaskId() + " " + line);
             }
             int exitCode = process.waitFor();
-            log.info("Python脚本执行完毕，退出码：" + exitCode);
-
-            String currentTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-            Task task = new Task();
-            task.setTaskId(currentTask.getTaskId());
-            if (exitCode == 0)
-                task.setStatus(5);
-            else
-                task.setStatus(100);
-            task.setEndTime(LocalDateTime.parse(currentTime, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
-
-            if (taskMapper.updateById(task) > 0) {
-                if (exitCode == 0)
-                    log.info("检测完成");
-                else {
-                    log.info("检测失败");
-                }
-            } else {
-                log.info("检测失败");
-            }
+            reader.close();
+            taskManager.stopTask(currentTask.getTaskId());
+            log.info("任务: " + currentTask.getTaskId() + " 检测成功, 已停止, 退出码为: " + exitCode);
         } catch (IOException | InterruptedException e) {
             e.printStackTrace();
-        } finally {
-            if (checkTaskPool instanceof ThreadPoolExecutor) {
-                ((ThreadPoolExecutor) checkTaskPool).remove(Thread.currentThread());
-            }
+            Task task = new Task();
+            task.setTaskId(currentTask.getTaskId());
+            task.setStatus(100);
+            taskMapper.updateById(task);
+            taskManager.stopTask(currentTask.getTaskId());
+            log.info("任务: " + currentTask.getTaskId() + " 检测失败, 已停止");
         }
     }
+}
 
-    @Async("checkTaskPool")
-    public void executeOnlineScript(String scriptPath, Task currentTask) {
-        log.info("执行在线检测的线程名字为 = " + Thread.currentThread().getName());
-        try {
-            ProcessBuilder processBuilder = new ProcessBuilder(scriptPath, "--taskid", currentTask.getTaskId(),
-                    "--netcard", currentTask.getNetcard());
-            Process process = processBuilder.start();
+@Component
+class TaskManager {
+    private static final Log log = LogFactory.get();
+    private final Map<String, Process> taskProcesses = new ConcurrentHashMap<>();
 
-            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-            String line;
-            while ((line = reader.readLine()) != null) {
-                log.info(line);
-            }
+    public void addTaskProcess(String taskId, Process process) {
+        taskProcesses.put(taskId, process);
+        log.info("添加任务: " + taskId + " Map中任务数: " + taskProcesses.size());
+    }
 
-            int exitCode = process.waitFor();
-            log.info("在线脚本执行完毕，退出码：" + exitCode);
-
-            Task task = new Task();
-            task.setTaskId(currentTask.getTaskId());
-            if (exitCode == 0)
-                task.setStatus(5);
-            else {
-                task.setStatus(100);
-            }
-
-            if (taskMapper.updateById(task) > 0) {
-                if (exitCode == 0)
-                    log.info("在线检测完成");
-                else {
-                    log.info("在线检测失败");
-                }
-            } else {
-                log.info("在线解析失败");
-            }
-
-        } catch (IOException | InterruptedException e) {
-            e.printStackTrace();
+    public void stopTask(String taskId) {
+        Process process = taskProcesses.get(taskId);
+        if (process != null) {
+            process.destroy();
+            taskProcesses.remove(taskId);
         }
+        log.info("删除任务: " + taskId + " Map中任务数: " + taskProcesses.size());
     }
 }

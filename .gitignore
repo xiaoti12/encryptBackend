@@ -40,7 +40,7 @@ build/
 # /core/*
 # !/core/fileWatcher.go
 # !/core/fileWatcher
-/core/watch/*
-/core/train
+/core
 /core_python/__pycache__
 /core_python/upload/*
+/corev2
